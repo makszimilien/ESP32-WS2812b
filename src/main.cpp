@@ -5,8 +5,16 @@
 #include <ArduinoOTA.h>
 #include <AsyncTCP.h>
 #include <ESPAsyncWebServer.h>
+#include <FastLED.h>
 #include <WiFi.h>
 #include <esp_task_wdt.h>
+
+// How many leds in your strip?
+#define NUM_LEDS 9
+
+// For led chips like WS2812, which have a data line, ground, and power, you
+// just need to define DATA_PIN.
+#define DATA_PIN GPIO_NUM_13
 
 // Watchdog timeout in milliseconds
 const int WATCHDOG_TIMEOUT = 8000;
@@ -46,6 +54,9 @@ const int tempPin = GPIO_NUM_32;
 // Create web server
 AsyncWebServer server(80);
 AsyncWebSocket ws("/ws");
+
+// Define the array of leds
+CRGB leds[NUM_LEDS];
 
 void sendData() {
   ws.printfAll("{\"input\":\"temp\", \"Pin\":%d, \"type\": \"input\"}",
@@ -94,6 +105,45 @@ bool initWiFi() {
 
   Serial.println(WiFi.localIP());
   return true;
+}
+
+void snake(CRGB colorF, CRGB colorB) {
+
+  for (int i = 0; i < NUM_LEDS; i++) {
+    for (int j = 0; j < NUM_LEDS; j++) {
+      if (j == i - 1)
+        leds[j] = colorF;
+      else if (j == i)
+        leds[j] = colorF;
+      else
+        leds[j] = CRGB::Black;
+    }
+    FastLED.show(100);
+    delay(80);
+  }
+
+  for (int i = NUM_LEDS - 1; i >= 0; i--) {
+    for (int j = NUM_LEDS - 1; j >= 0; j--) {
+      if (j == i)
+        leds[j] = colorB;
+      else if (j == i + 1)
+        leds[j] = colorB;
+      else
+        leds[j] = CRGB::Black;
+    }
+    FastLED.show(100);
+    delay(80);
+  }
+}
+
+CRGB randomCRGB() {
+  CRGB color;
+
+  color.r = random(0, 256);
+  color.g = random(0, 256);
+  color.b = random(0, 256);
+
+  return color;
 }
 
 void setup() {
@@ -190,6 +240,9 @@ void setup() {
   ArduinoOTA.setHostname(hostname);
   ArduinoOTA.onStart([]() { Serial.println("OTA update started"); });
   ArduinoOTA.begin();
+
+  // FastLED.addLeds<WS2812B, DATA_PIN, RGB>(leds, NUM_LEDS);
+  FastLED.addLeds<NEOPIXEL, DATA_PIN>(leds, NUM_LEDS);
 }
 
 void loop() {
@@ -207,5 +260,6 @@ void loop() {
     delay(5000);
     ESP.restart();
   }
-  delay(1000);
+
+  snake(randomCRGB(), randomCRGB());
 }

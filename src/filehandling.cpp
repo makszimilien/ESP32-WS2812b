@@ -4,7 +4,7 @@
 #include <ArduinoJson.h>
 
 // Variable for JSON document
-StaticJsonDocument<100> jsonWifi;
+DynamicJsonDocument jsonDoc(1000);
 
 // Initialize SPIFFS
 void initFS() {
@@ -13,24 +13,6 @@ void initFS() {
   } else {
     Serial.println("SPIFFS mounted successfully");
   }
-}
-
-// Read File from SPIFFS
-String readFile(fs::FS &fs, const char *path) {
-  Serial.printf("Reading file: %s\r\n", path);
-
-  File file = fs.open(path);
-  if (!file || file.isDirectory()) {
-    Serial.println("- failed to open file for reading");
-    return String();
-  }
-
-  String fileContent;
-  while (file.available()) {
-    fileContent = file.readStringUntil('\n');
-    break;
-  }
-  return fileContent;
 }
 
 // Read JSON File from SPIFFS
@@ -47,26 +29,11 @@ String readFileJson(fs::FS &fs, const char *path, const char *property) {
   std::unique_ptr<char[]> buf(new char[size]);
 
   file.readBytes(buf.get(), size);
-  deserializeJson(jsonWifi, buf.get());
+  deserializeJson(jsonDoc, buf.get());
+  file.close();
 
-  String value = jsonWifi[property];
+  String value = jsonDoc[property];
   return value;
-}
-
-// Write file to SPIFFS
-void writeFile(fs::FS &fs, const char *path, const char *message) {
-  Serial.printf("Writing file: %s\r\n", path);
-
-  File file = fs.open(path, FILE_WRITE);
-  if (!file) {
-    Serial.println("- failed to open file for writing");
-    return;
-  }
-  if (file.print(message)) {
-    Serial.println("- file written");
-  } else {
-    Serial.println("- frite failed");
-  }
 }
 
 // Write JSON file to SPIFFS
@@ -74,14 +41,30 @@ void writeFileJson(fs::FS &fs, const char *path, const char *property,
                    const char *value) {
   Serial.printf("Writing file: %s\r\n", path);
 
-  File file = fs.open(path, FILE_WRITE);
+  // Read current content
+  File file = fs.open(path);
+  if (!file || file.isDirectory()) {
+    Serial.println("- failed to open file for reading");
+    return;
+  }
+
+  size_t size = file.size();
+  std::unique_ptr<char[]> buf(new char[size]);
+
+  file.readBytes(buf.get(), size);
+  deserializeJson(jsonDoc, buf.get());
+  file.close();
+
+  // Expand current content and write to file
+  file = fs.open(path, FILE_WRITE);
   if (!file) {
     Serial.println("- failed to open file for writing");
     return;
   }
 
   // Creating JSON record
-  jsonWifi[property] = value;
+  jsonDoc[property] = value;
   // Writing data to JSON file
-  serializeJson(jsonWifi, file);
+  serializeJson(jsonDoc, file);
+  file.close();
 }
