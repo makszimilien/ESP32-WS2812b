@@ -58,6 +58,15 @@ AsyncWebSocket ws("/ws");
 // Define the array of leds
 CRGB leds[NUM_LEDS];
 
+// Dice faces
+int diceZero[9] = {0, 0, 0, 0, 0, 0, 0, 0, 0};
+int diceOne[9] = {0, 0, 0, 0, 1, 0, 0, 0, 0};
+int diceTwo[9] = {1, 0, 0, 0, 0, 0, 0, 0, 1};
+int diceThree[9] = {1, 0, 0, 0, 1, 0, 0, 0, 1};
+int diceFour[9] = {1, 0, 1, 0, 0, 0, 1, 0, 1};
+int diceFive[9] = {1, 0, 1, 0, 1, 0, 1, 0, 1};
+int diceSix[9] = {1, 0, 1, 1, 0, 1, 1, 0, 1};
+
 void sendData() {
   ws.printfAll("{\"input\":\"temp\", \"Pin\":%d, \"type\": \"input\"}",
                tempPin);
@@ -139,11 +148,99 @@ void snake(CRGB colorF, CRGB colorB) {
 CRGB randomCRGB() {
   CRGB color;
 
-  color.r = random(0, 256);
-  color.g = random(0, 256);
-  color.b = random(0, 256);
+  color.r = random(0, 255);
+  color.g = random(0, 255);
+  color.b = random(0, 255);
 
   return color;
+}
+
+void transitionalBlink(CRGB color) {
+  for (int i = 0; i < NUM_LEDS; i++) {
+    leds[i] = color;
+  }
+  for (int j = 0; j <= 255; j++) {
+    FastLED.show(j);
+  }
+  for (int j = 255; j >= 0; j--) {
+    FastLED.show(j);
+  }
+}
+
+void showDice(int *number, int onTime, int offTime, bool highlight) {
+  for (int i = 0; i < 9; i++) {
+    leds[i] = CRGB::Black;
+  }
+  FastLED.show();
+  delay(offTime);
+
+  if (highlight) {
+    for (int i = 0; i <= 5; i++) {
+      for (int i = 0; i < 9; i++) {
+        if (number[i])
+          leds[i] = CRGB::Red;
+        else
+          leds[i] = CRGB::Black;
+      }
+      FastLED.show(100);
+      delay(onTime);
+
+      for (int i = 0; i < 9; i++) {
+        if (number[i])
+          leds[i] = CRGB::Green;
+        else
+          leds[i] = CRGB::Black;
+      }
+      FastLED.show(100);
+      delay(onTime);
+    }
+  } else {
+    for (int i = 0; i < 9; i++) {
+      if (number[i])
+        leds[i] = CRGB::Red;
+      else
+        leds[i] = CRGB::Black;
+    }
+    FastLED.show(100);
+    delay(onTime);
+  }
+
+  for (int i = 0; i < 9; i++) {
+    leds[i] = CRGB::Black;
+  }
+  FastLED.show();
+}
+
+void rollTheDice() {
+  int roll = random(1, 6);
+  for (int i = 0; i <= 18 + roll; i++) {
+    bool highlight = i == 18 + roll;
+    switch (i % 6) {
+    case 0:
+      showDice(diceSix, map(i, 0, 24, 20, 400), 100, highlight);
+      break;
+
+    case 1:
+      showDice(diceOne, map(i, 0, 24, 20, 400), 100, highlight);
+      break;
+
+    case 2:
+      showDice(diceTwo, map(i, 0, 24, 20, 400), 100, highlight);
+      break;
+
+    case 3:
+      showDice(diceThree, map(i, 0, 24, 20, 400), 100, highlight);
+      break;
+
+    case 4:
+      showDice(diceFour, map(i, 0, 24, 20, 400), 100, highlight);
+      break;
+
+    case 5:
+      showDice(diceFive, map(i, 0, 24, 20, 400), 100, highlight);
+      break;
+    }
+  }
 }
 
 void setup() {
@@ -243,6 +340,16 @@ void setup() {
 
   // FastLED.addLeds<WS2812B, DATA_PIN, RGB>(leds, NUM_LEDS);
   FastLED.addLeds<NEOPIXEL, DATA_PIN>(leds, NUM_LEDS);
+
+  for (int i = 0; i < 3; i++) {
+    snake(randomCRGB(), randomCRGB());
+  }
+  for (int i = 0; i < 3; i++) {
+    transitionalBlink(randomCRGB());
+  }
+  for (int i = 0; i < 3; i++) {
+    rollTheDice();
+  }
 }
 
 void loop() {
@@ -260,6 +367,4 @@ void loop() {
     delay(5000);
     ESP.restart();
   }
-
-  snake(randomCRGB(), randomCRGB());
 }
