@@ -4,7 +4,30 @@
     <meta charset="UTF-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Arduino OTA</title>
+    <link rel="icon" href="icon.png" />
+    <link rel="stylesheet" type="text/css" href="style.css" />
+    <title>Hydrofoil Control</title>
   </head>
-  <body></body>
+  <body>
+    <div class="topnav">
+      <h1>Hydrofoil Control</h1>
+    </div>
+    <div class="content">
+      <div class="card" id="demos">
+        <p class="card-title">Demos</p>
+
+        <input type="button" value="Blink" id="blink" />
+        <input type="button" value="Snake" id="snake" />
+        <input type="button" value="Dice" id="dice" />
+        <br />
+        <input type="button" value="OFF" id="off" />
+      </div>
+
+      <div class="card">
+        <p class="card-title">Color</p>
+        <input type="color" id="color" name="colorPicker" value="#ff0000" />
+      </div>
+    </div>
+    <script src="script.js"></script>
+  </body>
 </html>
