@@ -286,8 +286,60 @@ void setup() {
 
     server.serveStatic("/", SPIFFS, "/");
 
-    server.on("/on", HTTP_GET, [](AsyncWebServerRequest *request) {
-      request->send(SPIFFS, "/index.html", "text/html");
+    server.on("/input", HTTP_POST, [](AsyncWebServerRequest *request) {
+      // Check if all required parameters are present
+      if (request->hasParam("blink", true)) {
+
+        stopBlink = false;
+        stopSnake = true;
+        stopDice = true;
+
+        // Send success response
+        request->send(200, "text/plain", "OK");
+      } else if (request->hasParam("snake", true)) {
+
+        stopBlink = true;
+        stopSnake = false;
+        stopDice = true;
+
+        // Send success response
+        request->send(200, "text/plain", "OK");
+      } else if (request->hasParam("dice", true)) {
+
+        stopBlink = true;
+        stopSnake = true;
+        stopDice = false;
+
+        // Send success response
+        request->send(200, "text/plain", "OK");
+      } else if (request->hasParam("off", true)) {
+        stopBlink = true;
+        stopSnake = true;
+        stopDice = true;
+
+        // Send success response
+        request->send(200, "text/plain", "OK");
+      } else if (request->hasParam("color", true)) {
+
+        stopBlink = true;
+        stopSnake = true;
+        stopDice = true;
+
+        Serial.println("color");
+        Serial.println(request->getParam("color", true)->value());
+        CRGB color = request->getParam("color", true)->value().toInt();
+
+        for (int i = 0; i < NUM_LEDS; i++) {
+          leds[i] = color;
+        }
+        FastLED.show();
+
+        // Send success response
+        request->send(200, "text/plain", "OK");
+      } else {
+        // Send error response
+        request->send(400, "text/plain", "Invalid parameters");
+      }
     });
 
     server.begin();

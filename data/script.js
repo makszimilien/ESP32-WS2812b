@@ -9,14 +9,11 @@ const offButton = document.getElementById("off");
 const colorPicker = document.getElementById("color");
 
 // Callback for inputs
-const handleInputs = function () {
+const handleInputs = function (event) {
   const xhr = new XMLHttpRequest();
   const params = new URLSearchParams();
-  for (let slider of sliders) {
-    params.append(slider.id, slider.value);
-    document.getElementById(`${slider.id}-value`).innerText = slider.value;
-  }
-  xhr.open("POST", "/set-sliders", true);
+  params.append(event.target.id, event.target.value);
+  xhr.open("POST", "/input", true);
   xhr.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
   xhr.send(params);
 };
@@ -25,12 +22,12 @@ const handleInputs = function () {
 inputsCard.addEventListener("click", function (e) {
   e.preventDefault();
   console.log(e.target.id);
-  // handleInputs();
+  handleInputs(e);
 });
 
 // Event listener for color picker
 colorPicker.addEventListener("input", function (e) {
   // e.preventDefault();
   console.log(e.target.value);
-  // handleInputs();
+  handleInputs(e);
 });
