@@ -38,7 +38,7 @@ String gateway = "192.168.1.1";
 const char *jsonWifiPath = "/wifi.json";
 
 // Setting hostname
-const char *hostname = "arduino-ota";
+const char *hostname = "dice";
 
 // Variables for Local IP address, gateway and mask
 IPAddress localIP;
@@ -48,12 +48,8 @@ IPAddress subnet(255, 255, 0, 0);
 // "Watchdog" variable for the filesystem
 boolean restart = false;
 
-// Define pins for various components
-const int tempPin = GPIO_NUM_32;
-
 // Create web server
 AsyncWebServer server(80);
-AsyncWebSocket ws("/ws");
 
 // Define the array of leds
 CRGB leds[NUM_LEDS];
@@ -71,22 +67,6 @@ int diceSix[NUM_LEDS] = {1, 0, 1, 1, 0, 1, 1, 0, 1};
 bool stopBlink = true;
 bool stopSnake = true;
 bool stopDice = true;
-
-void sendData() {
-  ws.printfAll("{\"input\":\"temp\", \"Pin\":%d, \"type\": \"input\"}",
-               tempPin);
-}
-
-void onWsEvent(AsyncWebSocket *server, AsyncWebSocketClient *client,
-               AwsEventType type, void *arg, uint8_t *data, size_t len) {
-  if (type == WS_EVT_CONNECT) {
-    client->ping();
-    sendData();
-  } else if (type == WS_EVT_DISCONNECT) {
-  } else if (type == WS_EVT_ERROR) {
-  } else if (type == WS_EVT_PONG) {
-  }
-}
 
 // Initialize WiFi
 bool initWiFi() {
@@ -148,6 +128,9 @@ void snake(CRGB colorF, CRGB colorB) {
     FastLED.show(100);
     delay(80);
   }
+  for (int i = 0; i < NUM_LEDS; i++)
+    leds[i] = CRGB::Black;
+  FastLED.show();
 }
 
 CRGB randomCRGB() {
@@ -217,7 +200,7 @@ void showScreen(int *number, int onTime, int offTime, bool highlight) {
 }
 
 void rollTheDice() {
-  int roll = random(1, 6);
+  int roll = random(1, 7);
   for (int i = 0; i <= 18 + roll; i++) {
     bool highlight = i == 18 + roll;
     switch (i % 6) {
@@ -248,6 +231,19 @@ void rollTheDice() {
   }
 }
 
+CRGB stringToColor(String colorString) {
+  // Convert the hex string (skipping the '#' character) to a long integer
+  long hexValue = strtol(colorString.c_str() + 1, nullptr, 16);
+
+  // Extract individual color components (red, green, and blue)
+  int red = (hexValue >> 16) & 0xFF;  // Extract the red component (bits 16-23)
+  int green = (hexValue >> 8) & 0xFF; // Extract the green component (bits 8-15)
+  int blue = hexValue & 0xFF;         // Extract the blue component (bits 0-7)
+
+  // Create a CRGB color using the extracted color components
+  return CRGB(red, green, blue);
+}
+
 void setup() {
 
   // Enable the Watchdog Timer
@@ -256,9 +252,6 @@ void setup() {
 
   // Begin serial communication
   Serial.begin(115200);
-
-  // Configure pin modes
-  pinMode(tempPin, OUTPUT);
 
   // Mount SPIFFS
   initFS();
@@ -270,12 +263,6 @@ void setup() {
   Serial.println(pass);
   Serial.println(ip);
   Serial.println(gateway);
-
-  // Set up WebSocket event handler
-  ws.onEvent(onWsEvent);
-
-  // Add WebSocket handler to the server
-  server.addHandler(&ws);
 
   // Connect to Wi-Fi
   if (initWiFi()) {
@@ -327,7 +314,8 @@ void setup() {
 
         Serial.println("color");
         Serial.println(request->getParam("color", true)->value());
-        CRGB color = request->getParam("color", true)->value().toInt();
+        String colorText = request->getParam("color", true)->value();
+        CRGB color = stringToColor(colorText);
 
         for (int i = 0; i < NUM_LEDS; i++) {
           leds[i] = color;
@@ -413,9 +401,6 @@ void setup() {
 void loop() {
   // Handle Over-The-Air (OTA) updates for the Arduino board
   ArduinoOTA.handle();
-
-  // Clean up and close inactive WebSocket connections
-  ws.cleanupClients();
 
   // Reset the Watchdog Timer to prevent a system reset
   esp_task_wdt_reset();
